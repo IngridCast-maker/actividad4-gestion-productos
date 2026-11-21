@@ -139,7 +139,8 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api/auth';
+        // URL relativa: funciona en localhost y en Vercel
+          const API_URL = '/api/auth';
 
         function showTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
