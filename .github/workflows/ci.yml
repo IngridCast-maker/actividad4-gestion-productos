@@ -1,0 +1,32 @@
+# .github/workflows/ci.yml
+name: CI/CD Pipeline - Pruebas Automatizadas
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar pruebas con Jest
+        run: npm test
+        env:
+          MONGO_URI: mongodb://localhost:27017/test_db
+          JWT_SECRET: clave_secreta_de_prueba
+          PORT: 3000
