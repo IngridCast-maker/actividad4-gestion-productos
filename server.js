@@ -30,6 +30,9 @@ app.use('/api/productos', productoRoutes);
 
 // Ruta de prueba (pública)
 app.get('/', (req, res) => {
+    res.redirect('/index.html');
+});
+app.get('/api', (req, res) => {
     res.json({ mensaje: 'API de Gestión de Productos funcionando correctamente' });
 });
 
