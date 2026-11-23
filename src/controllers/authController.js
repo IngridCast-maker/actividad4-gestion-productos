@@ -11,25 +11,49 @@ exports.registrar = async (req, res) => {
             return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
         }
 
-        // Verificar si el usuario ya existe
         const existe = await Usuario.findOne({ username });
         if (existe) {
             return res.status(400).json({ error: 'El usuario ya existe' });
         }
 
-        // Encriptar contraseña con bcrypt (10 salt rounds)
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Crear usuario
-        const nuevoUsuario = new Usuario({
-            username,
-            password: hashedPassword
-        });
-
+        const nuevoUsuario = new Usuario({ username, password: hashedPassword });
         await nuevoUsuario.save();
+
         res.status(201).json({ mensaje: 'Usuario registrado exitosamente' });
     } catch (error) {
-        console.error(error);
+        console.error('Error en registrar:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+exports.login = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+        }
+
+        const usuario = await Usuario.findOne({ username });
+        if (!usuario) {
+            return res.status(400).json({ error: 'Usuario no encontrado' });
+        }
+
+        const esValido = await bcrypt.compare(password, usuario.password);
+        if (!esValido) {
+            return res.status(400).json({ error: 'Contraseña incorrecta' });
+        }
+
+        const token = jwt.sign(
+            { id: usuario._id, username: usuario.username },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({ mensaje: 'Login exitoso', token });
+    } catch (error) {
+        console.error('Error en login:', error);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };

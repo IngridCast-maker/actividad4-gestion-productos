@@ -1,16 +1,13 @@
 // src/routes/productoRoutes.js
 const express = require('express');
 const router = express.Router();
-const productoController = require('../controllers/productoController');
 const authMiddleware = require('../middleware/authMiddleware');
+const productoController = require('../controllers/productoController');
 
-// Todas las rutas de productos están protegidas (Error Card #2)
-router.use(authMiddleware);
-
-router.get('/', productoController.obtenerTodos);
-router.get('/:id', productoController.obtenerPorId);
-router.post('/', productoController.crear);
-router.put('/:id', productoController.actualizar);
-router.delete('/:id', productoController.eliminar);
+router.get('/', authMiddleware, productoController.obtenerTodos);
+router.get('/:id', authMiddleware, productoController.obtenerPorId);
+router.post('/', authMiddleware, productoController.crear);
+router.put('/:id', authMiddleware, productoController.actualizar);
+router.delete('/:id', authMiddleware, productoController.eliminar);
 
 module.exports = router;
