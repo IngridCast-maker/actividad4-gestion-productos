@@ -1,4 +1,4 @@
-// server.js - Compatible con Vercel y local
+// server.js - Optimizado para Vercel Serverless
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,28 +9,32 @@ const app = express();
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// Conexión a MongoDB (sin bloquear la app)
-let isConnected = false;
+// Configuración de MongoDB para Vercel Serverless
+const MONGO_URI = process.env.MONGO_URI;
 
 const connectDB = async () => {
-    if (isConnected) return;
-    
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
+        await mongoose.connect(MONGO_URI, {
+            serverSelectionTimeoutMS: 5000, // Timeout más corto para serverless
+            connectTimeoutMS: 10000,
+            socketTimeoutMS: 45000,
+            maxPoolSize: 10,
+            minPoolSize: 1,
+            retryWrites: true,
+            w: 'majority'
         });
-        isConnected = true;
-        console.log('✅ Conectado a MongoDB Atlas');
+        console.log('✅ MongoDB conectado exitosamente');
     } catch (error) {
-        console.error('❌ Error MongoDB:', error.message);
+        console.error('❌ Error de conexión MongoDB:', error.message);
+        process.exit(1);
     }
 };
 
-// Conectar al iniciar
-connectDB();
+// Conectar solo una vez
+if (mongoose.connection.readyState === 0) {
+    connectDB();
+}
 
 // Rutas
 const authRoutes = require('./src/routes/authRoutes');
