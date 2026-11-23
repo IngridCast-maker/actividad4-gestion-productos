@@ -1,4 +1,4 @@
-// api/index.js - Versión ultra-robusta para Vercel
+// api/index.js - Versión con conexión garantizada
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,31 +9,50 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Conexión a MongoDB (NO bloquea la app si falla)
-let isConnected = false;
+// Conexión a MongoDB con reintentos
+let dbConnection = null;
+
 const connectDB = async () => {
-    if (isConnected) return;
+    if (dbConnection && mongoose.connection.readyState === 1) {
+        return dbConnection;
+    }
+    
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            serverSelectionTimeoutMS: 5000,
-            connectTimeoutMS: 10000
+        dbConnection = await mongoose.connect(process.env.MONGO_URI, {
+            serverSelectionTimeoutMS: 30000, // 30 segundos de timeout
+            connectTimeoutMS: 30000,
+            socketTimeoutMS: 45000,
+            maxPoolSize: 10,
+            retryWrites: true,
+            w: 'majority'
         });
-        isConnected = true;
-        console.log('✅ MongoDB conectado');
+        console.log('✅ MongoDB conectado exitosamente');
+        return dbConnection;
     } catch (error) {
-        console.error('⚠️ MongoDB no conectado (la app sigue funcionando):', error.message);
+        console.error('❌ Error MongoDB:', error.message);
+        throw error;
     }
 };
-connectDB();
 
-// Cargar rutas con try/catch para que no rompan la app
+// Middleware para asegurar conexión antes de cada request
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error('Error de conexión:', error.message);
+        res.status(503).json({ error: 'Servicio no disponible, intenta de nuevo' });
+    }
+});
+
+// Cargar rutas
 try {
     const authRoutes = require('../src/routes/authRoutes');
     const productoRoutes = require('../src/routes/productoRoutes');
     app.use('/api/auth', authRoutes);
     app.use('/api/productos', productoRoutes);
 } catch (error) {
-    console.error('⚠️ Error cargando rutas:', error.message);
+    console.error('Error cargando rutas:', error.message);
 }
 
 // Ruta raíz: servir index.html
@@ -46,7 +65,6 @@ app.get('/', (req, res) => {
     }
 });
 
-// Ruta para index.html explícita
 app.get('/index.html', (req, res) => {
     const indexPath = path.join(__dirname, '..', 'index.html');
     if (fs.existsSync(indexPath)) {
@@ -61,10 +79,10 @@ app.get('/api', (req, res) => {
     res.json({ mensaje: 'API funcionando correctamente' });
 });
 
-// Manejo de errores global
+// Manejo de errores
 app.use((err, req, res, next) => {
     console.error('Error:', err.message);
-    res.status(500).json({ error: 'Error interno' });
+    res.status(500).json({ error: 'Error interno del servidor' });
 });
 
 module.exports = app;
