@@ -49,8 +49,15 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Iniciar servidor
+// Iniciar servidor (compatible con Vercel y local)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
-});
+
+// Solo escuchar si NO estamos en Vercel
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
+    });
+}
+
+// Exportar la app para Vercel
+module.exports = app;

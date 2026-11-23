@@ -11,7 +11,6 @@ const usuarioSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
-        // La encriptación con bcrypt se hará en el controlador antes de guardar
     }
 }, { timestamps: true });
 
