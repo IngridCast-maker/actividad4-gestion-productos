@@ -3,7 +3,7 @@ const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-exports.registrar = async (req, res) => {
+const registrar = async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -17,17 +17,21 @@ exports.registrar = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const nuevoUsuario = new Usuario({ username, password: hashedPassword });
-        await nuevoUsuario.save();
 
+        const nuevoUsuario = new Usuario({
+            username,
+            password: hashedPassword
+        });
+
+        await nuevoUsuario.save();
         res.status(201).json({ mensaje: 'Usuario registrado exitosamente' });
     } catch (error) {
-        console.error('Error en registrar:', error);
+        console.error('Error en registrar:', error.message);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
-exports.login = async (req, res) => {
+const login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
@@ -53,7 +57,9 @@ exports.login = async (req, res) => {
 
         res.json({ mensaje: 'Login exitoso', token });
     } catch (error) {
-        console.error('Error en login:', error);
+        console.error('Error en login:', error.message);
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
+
+module.exports = { registrar, login };
